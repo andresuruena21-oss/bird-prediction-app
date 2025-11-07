@@ -22,7 +22,7 @@ st.set_page_config(
 MODELS_DIR = "models"
 
 # ✅ IDs reales de tus modelos en Google Drive (.keras)
-VGG16_ID = "1stPEqkCrBu9tcABtRdEZ9LtrAewvU6Ut"
+VGG16_ID = "1Jppl1AHwIZvZ74t3RF4tjFXOzA_EOOlU"
 RESNET50_ID = "1xbrx9aIcgLKVb8d8MQG6ZsU2yPwBywbn"
 
 def descargar_modelo_keras(file_id, nombre_local):
@@ -236,5 +236,6 @@ else:
         "👈 Sube una imagen en la parte izquierda para ver aquí la mejor predicción, "
         "el nombre real del ave y una breve descripción, junto con barras de probabilidad."
     )
+
 
 
