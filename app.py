@@ -25,7 +25,7 @@ MODELS_DIR = "models"
 
 # ✅ IDs reales de tus modelos en Google Drive
 # VGG16 → .keras nuevo (entrenado con TF/Keras 2.15)
-VGG16_ID = "1D6JYi8GwZ6H2noD4KW5FB8GwIVrgDnb-"
+VGG16_ID = "14h5wstqxEEaRKZNCgCDwOJNG8q_zxTEa"
 # ResNet50 → .keras (el que ya funcionaba)
 RESNET50_ID = "1xbrx9aIcgLKVb8d8MQG6ZsU2yPwBywbn"
 
@@ -262,4 +262,5 @@ else:
         "👈 Sube una imagen en la parte izquierda para ver aquí la mejor predicción, "
         "el nombre real del ave y una breve descripción, junto con barras de probabilidad."
     )
+
 
