@@ -42,14 +42,30 @@ def descargar_modelo_keras(file_id, nombre_local):
 def load_selected_model(model_name: str):
     """
     Carga el modelo .keras seleccionado (VGG16 o ResNet50).
-    Si no existe localmente, lo descarga desde Google Drive.
+    Para VGG16 usamos un modo más flexible (safe_mode=False) porque el archivo
+    viene de una versión vieja de Keras.
     """
     if model_name == "VGG16":
         modelo_path = descargar_modelo_keras(VGG16_ID, "vgg16_model.keras")
     else:
         modelo_path = descargar_modelo_keras(RESNET50_ID, "resnet50_model.keras")
 
-    modelo = tf.keras.models.load_model(modelo_path, compile=False)
+    st.write(f"🔍 Cargando modelo {model_name} desde: {modelo_path}")
+
+    # Intento más flexible (Keras 3) para evitar errores de compatibilidad
+    try:
+        modelo = tf.keras.models.load_model(
+            modelo_path,
+            compile=False,
+            safe_mode=False  # 👈 clave cuando el .keras viene de versiones viejas
+        )
+    except TypeError:
+        # Por si tu versión de tf no soporta el parámetro safe_mode
+        modelo = tf.keras.models.load_model(
+            modelo_path,
+            compile=False
+        )
+
     return modelo
 
 # ==========================
@@ -236,4 +252,5 @@ else:
         "👈 Sube una imagen en la parte izquierda para ver aquí la mejor predicción, "
         "el nombre real del ave y una breve descripción, junto con barras de probabilidad."
     )
+
 
