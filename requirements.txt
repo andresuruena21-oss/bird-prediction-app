@@ -1,7 +1,5 @@
-# 📦 Dependencias para la app de clasificación de aves
 streamlit==1.39.0
-tensorflow==2.15.0
-keras==2.15.0
+tensorflow==2.20.0
 gdown
 pillow
 pandas
