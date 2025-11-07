@@ -3,6 +3,7 @@ import os
 import streamlit as st
 from PIL import Image
 import pandas as pd
+
 import tensorflow as tf
 import gdown
 
@@ -18,18 +19,20 @@ st.set_page_config(
 )
 
 # ==========================
-# 📁 MANEJO DE MODELOS (.keras desde Drive)
+# 📂 MODELOS DESDE GOOGLE DRIVE
 # ==========================
 MODELS_DIR = "models"
 
-# ✅ IDs de tus modelos en Google Drive
-VGG16_ID = "1Jppl1AHwIZvZ74t3RF4tjFXOzA_EOOlU"
+# ✅ IDs reales de tus modelos en Google Drive
+# VGG16 → .h5 (nuevo)
+VGG16_ID = "1Bhl_spsgmeBVIfdKbDewSrxLfOsGciRj"
+# ResNet50 → .keras (el que ya funcionaba)
 RESNET50_ID = "1xbrx9aIcgLKVb8d8MQG6ZsU2yPwBywbn"
 
 
-def descargar_modelo_keras(file_id, nombre_local):
+def descargar_modelo(file_id, nombre_local):
     """
-    Descarga un archivo .keras desde Google Drive a la carpeta models/
+    Descarga un archivo de modelo (.h5 o .keras) desde Google Drive a la carpeta models/
     si no existe localmente. Devuelve la ruta al archivo.
     """
     os.makedirs(MODELS_DIR, exist_ok=True)
@@ -44,12 +47,14 @@ def descargar_modelo_keras(file_id, nombre_local):
 @st.cache_resource
 def load_selected_model(model_name: str):
     """
-    Carga el modelo seleccionado (VGG16 o ResNet50) desde .keras.
+    Carga el modelo seleccionado (VGG16 o ResNet50).
+    - VGG16: archivo .h5
+    - ResNet50: archivo .keras
     """
     if model_name == "VGG16":
-        modelo_path = descargar_modelo_keras(VGG16_ID, "vgg16_model.keras")
+        modelo_path = descargar_modelo(VGG16_ID, "vgg16_model.h5")
     else:
-        modelo_path = descargar_modelo_keras(RESNET50_ID, "resnet50_model.keras")
+        modelo_path = descargar_modelo(RESNET50_ID, "resnet50_model.keras")
 
     modelo = tf.keras.models.load_model(modelo_path, compile=False)
     return modelo
@@ -159,7 +164,7 @@ if uploaded_file:
     col_left.image(img, caption="Imagen cargada", use_column_width=True)
 
     if col_left.button("🔍 Clasificar ave"):
-        with st.spinner(f"Analizando la imagen con el modelo {model_name}..."):
+        with st.spinner("Analizando la imagen con el modelo seleccionado..."):
             results = predict(model, img, model_type=model_name)
 
         if not results:
@@ -194,6 +199,7 @@ if uploaded_file:
             # ==========================
             st.markdown("### 📊 Top predicciones del modelo")
 
+            # DataFrame para la gráfica
             labels = []
             probs = []
             for name, prob in results:
@@ -211,8 +217,10 @@ if uploaded_file:
                 {"Especie": labels, "Probabilidad (%)": probs}
             ).set_index("Especie")
 
+            # Gráfica de barras
             st.bar_chart(df)
 
+            # Detalle texto + descripciones
             st.markdown("#### 📋 Detalle de predicciones")
             for (name, prob) in results:
                 info = BIRD_INFO.get(
@@ -236,4 +244,3 @@ else:
         "👈 Sube una imagen en la parte izquierda para ver aquí la mejor predicción, "
         "el nombre real del ave y una breve descripción, junto con barras de probabilidad."
     )
-
