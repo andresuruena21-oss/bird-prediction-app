@@ -1,8 +1,14 @@
-
 import os
+
+import streamlit as st
+from PIL import Image
+import pandas as pd
+
 import tensorflow as tf
 import gdown
-import streamlit as st
+
+from utils import predict
+
 
 # ==========================
 # 🔧 CONFIGURACIÓN BÁSICA
@@ -230,3 +236,4 @@ else:
         "👈 Sube una imagen en la parte izquierda para ver aquí la mejor predicción, "
         "el nombre real del ave y una breve descripción, junto con barras de probabilidad."
     )
+
