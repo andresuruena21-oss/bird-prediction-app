@@ -24,7 +24,7 @@ st.set_page_config(
 MODELS_DIR = "models"
 
 # ✅ IDs reales de tus modelos en Google Drive
-# VGG16 → .keras (nuevo, entrenado con TF 2.15)
+# VGG16 → .keras nuevo (entrenado con TF/Keras 2.15)
 VGG16_ID = "1D6JYi8GwZ6H2noD4KW5FB8GwIVrgDnb-"
 # ResNet50 → .keras (el que ya funcionaba)
 RESNET50_ID = "1xbrx9aIcgLKVb8d8MQG6ZsU2yPwBywbn"
@@ -32,7 +32,7 @@ RESNET50_ID = "1xbrx9aIcgLKVb8d8MQG6ZsU2yPwBywbn"
 
 def descargar_modelo(file_id, nombre_local):
     """
-    Descarga un archivo de modelo (.keras o .h5) desde Google Drive a la carpeta models/
+    Descarga un archivo de modelo (.h5 o .keras) desde Google Drive a la carpeta models/
     si no existe localmente. Devuelve la ruta al archivo.
     """
     os.makedirs(MODELS_DIR, exist_ok=True)
@@ -47,17 +47,38 @@ def descargar_modelo(file_id, nombre_local):
 @st.cache_resource
 def load_selected_model(model_name: str):
     """
-    Carga el modelo seleccionado (VGG16 o ResNet50).
-    - VGG16: archivo .keras (nuevo)
-    - ResNet50: archivo .keras
+    Carga el modelo seleccionado, garantizando que ResNet50 siempre funcione.
+    - Siempre cargamos ResNet50 como modelo base estable.
+    - Si el usuario elige VGG16, intentamos cargarlo; si falla,
+      mostramos un aviso y usamos ResNet50 para no romper la app.
     """
-    if model_name == "VGG16":
-        modelo_path = descargar_modelo(VGG16_ID, "vgg16_model.keras")
-    else:
-        modelo_path = descargar_modelo(RESNET50_ID, "resnet50_model.keras")
+    # 1️⃣ Cargar SIEMPRE ResNet50 (modelo estable)
+    resnet_path = descargar_modelo(RESNET50_ID, "resnet50_model.keras")
+    resnet_model = tf.keras.models.load_model(resnet_path, compile=False)
 
-    modelo = tf.keras.models.load_model(modelo_path, compile=False)
-    return modelo
+    # 2️⃣ Si el usuario elige VGG16, intentamos cargarlo
+    if model_name == "VGG16":
+        vgg_path = descargar_modelo(VGG16_ID, "vgg16_model.keras")
+        try:
+            # safe_mode=False para que Keras intente ser más flexible
+            vgg_model = tf.keras.models.load_model(
+                vgg_path,
+                compile=False,
+                safe_mode=False
+            )
+            return vgg_model
+        except Exception as e:
+            # Si falla, NO rompemos la app: usamos ResNet y avisamos
+            st.error(
+                "⚠️ No se pudo cargar el modelo VGG16 en la versión web "
+                "por un problema de compatibilidad de TensorFlow/Keras.\n\n"
+                "➡️ Se usará **ResNet50** en su lugar para hacer la predicción."
+            )
+            st.caption(f"Detalle técnico: {type(e).__name__}")
+            return resnet_model
+
+    # 3️⃣ Si el usuario elige ResNet50, usamos el modelo estable
+    return resnet_model
 
 
 # ==========================
@@ -76,12 +97,12 @@ BIRD_INFO = {
     },
     "Oryzoborus_angolensis": {
         "common": "Arrocero buchicastaño",
-        "scientific": "Oryzoborus angolensis",
+        "scientific": "Oryzoborus_angolensis",
         "description": "Semillero robusto; el macho es oscuro con pecho castaño. Vive en zonas abiertas y pastizales ricos en semillas."
     },
     "Piculus_chrysochloros": {
         "common": "Carpintero dorado",
-        "scientific": "Piculus_chrysochloros",
+        "scientific": "Piculus chrysochloros",
         "description": "Carpintero de tonos verdes y dorados que busca insectos bajo la corteza de los árboles en bosques y bordes de selva."
     },
     "Psarocolius_decumanus": {
