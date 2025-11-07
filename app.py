@@ -24,15 +24,15 @@ st.set_page_config(
 MODELS_DIR = "models"
 
 # ✅ IDs reales de tus modelos en Google Drive
-# VGG16 → .h5 (nuevo)
-VGG16_ID = "1Bhl_spsgmeBVIfdKbDewSrxLfOsGciRj"
+# VGG16 → .keras (nuevo, entrenado con TF 2.15)
+VGG16_ID = "1D6JYi8GwZ6H2noD4KW5FB8GwIVrgDnb-"
 # ResNet50 → .keras (el que ya funcionaba)
 RESNET50_ID = "1xbrx9aIcgLKVb8d8MQG6ZsU2yPwBywbn"
 
 
 def descargar_modelo(file_id, nombre_local):
     """
-    Descarga un archivo de modelo (.h5 o .keras) desde Google Drive a la carpeta models/
+    Descarga un archivo de modelo (.keras o .h5) desde Google Drive a la carpeta models/
     si no existe localmente. Devuelve la ruta al archivo.
     """
     os.makedirs(MODELS_DIR, exist_ok=True)
@@ -48,11 +48,11 @@ def descargar_modelo(file_id, nombre_local):
 def load_selected_model(model_name: str):
     """
     Carga el modelo seleccionado (VGG16 o ResNet50).
-    - VGG16: archivo .h5
+    - VGG16: archivo .keras (nuevo)
     - ResNet50: archivo .keras
     """
     if model_name == "VGG16":
-        modelo_path = descargar_modelo(VGG16_ID, "vgg16_model.h5")
+        modelo_path = descargar_modelo(VGG16_ID, "vgg16_model.keras")
     else:
         modelo_path = descargar_modelo(RESNET50_ID, "resnet50_model.keras")
 
@@ -81,7 +81,7 @@ BIRD_INFO = {
     },
     "Piculus_chrysochloros": {
         "common": "Carpintero dorado",
-        "scientific": "Piculus chrysochloros",
+        "scientific": "Piculus_chrysochloros",
         "description": "Carpintero de tonos verdes y dorados que busca insectos bajo la corteza de los árboles en bosques y bordes de selva."
     },
     "Psarocolius_decumanus": {
@@ -199,7 +199,6 @@ if uploaded_file:
             # ==========================
             st.markdown("### 📊 Top predicciones del modelo")
 
-            # DataFrame para la gráfica
             labels = []
             probs = []
             for name, prob in results:
@@ -217,10 +216,8 @@ if uploaded_file:
                 {"Especie": labels, "Probabilidad (%)": probs}
             ).set_index("Especie")
 
-            # Gráfica de barras
             st.bar_chart(df)
 
-            # Detalle texto + descripciones
             st.markdown("#### 📋 Detalle de predicciones")
             for (name, prob) in results:
                 info = BIRD_INFO.get(
@@ -244,3 +241,4 @@ else:
         "👈 Sube una imagen en la parte izquierda para ver aquí la mejor predicción, "
         "el nombre real del ave y una breve descripción, junto con barras de probabilidad."
     )
+
