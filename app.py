@@ -45,7 +45,6 @@ def descargar_modelo(file_id, nombre_local):
             gdown.download(url, ruta_local, quiet=False)
     return ruta_local
 
-
 @st.cache_resource
 def load_selected_model(model_name: str):
     """
@@ -54,29 +53,42 @@ def load_selected_model(model_name: str):
     - Si el usuario elige VGG16, lo cargamos con Keras 3.
       Si falla, usamos ResNet50 y mostramos un aviso.
     """
-    # 1️⃣ Cargar SIEMPRE ResNet50 (modelo estable con tf.keras)
-    resnet_path = descargar_modelo(RESNET50_ID, "resnet50_model.keras")
-    resnet_model = tf.keras.models.load_model(resnet_path, compile=False)
+    st.write(f"🔄 Cargando modelo: {model_name}")
+
+    # 1️⃣ Intentar cargar ResNet50 (modelo estable)
+    try:
+        st.write("➡️ Descargando/cargando ResNet50...")
+        resnet_path = descargar_modelo(RESNET50_ID, "resnet50_model.keras")
+        resnet_model = tf.keras.models.load_model(resnet_path, compile=False)
+        st.write("✅ ResNet50 cargado correctamente.")
+    except Exception as e:
+        st.error("❌ No se pudo cargar **ResNet50** (modelo base).")
+        st.exception(e)
+        # Si ni siquiera ResNet carga, no tiene sentido seguir
+        st.stop()
 
     # 2️⃣ Si el usuario elige VGG16, intentamos cargarlo con Keras 3
     if model_name == "VGG16":
+        st.write("➡️ Descargando/cargando VGG16 (.keras con Keras 3)...")
         vgg_path = descargar_modelo(VGG16_ID, "vgg16_model.keras")
         try:
-            # 👇 usamos keras.models.load_model (Keras 3), NO tf.keras
+            import keras
             vgg_model = keras.models.load_model(vgg_path)
+            st.write("✅ VGG16 cargado correctamente.")
             return vgg_model
         except Exception as e:
             st.error(
-                "⚠️ No se pudo cargar el modelo **VGG16** en la versión web "
-                "por un problema de compatibilidad de TensorFlow/Keras.\n\n"
+                "⚠️ No se pudo cargar el modelo **VGG16** por un problema de "
+                "compatibilidad de TensorFlow/Keras.\n\n"
                 "➡️ Se usará **ResNet50** en su lugar para hacer la predicción."
             )
-            st.caption(f"Detalle técnico: {type(e).__name__}")
+            # Mostrar detalle técnico abajo para depurar
+            st.caption(f"Tipo de error: {type(e).__name__}")
+            st.exception(e)
             return resnet_model
 
-    # 3️⃣ Si el usuario elige ResNet50, usamos el modelo estable
+    # 3️⃣ Si el usuario elige ResNet50, devolvemos el modelo estable
     return resnet_model
-
 
 # ==========================
 # 🐦 INFO DE LAS ESPECIES
@@ -259,3 +271,4 @@ else:
         "👈 Sube una imagen en la parte izquierda para ver aquí la mejor predicción, "
         "el nombre real del ave y una breve descripción, junto con barras de probabilidad."
     )
+
