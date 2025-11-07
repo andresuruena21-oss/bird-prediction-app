@@ -1,11 +1,11 @@
 import os
-import zipfile  # 👈 nuevo
 
 import streamlit as st
 from PIL import Image
 import pandas as pd
 
 import tensorflow as tf
+import keras          # 👈 usamos Keras 3 para cargar VGG16
 import gdown
 
 from utils import predict
@@ -25,9 +25,8 @@ st.set_page_config(
 MODELS_DIR = "models"
 
 # ✅ IDs reales de tus modelos en Google Drive
-# VGG16 → SavedModel comprimido en .zip
-# ⚠️ CAMBIA ESTE ID POR EL DEL ZIP QUE TIENE saved_model.pb + variables/ + assets/
-VGG16_ZIP_ID = "1ZdkXVjvuTGXgz54DtXLcRtyCTWL2-5vA"
+# ⚠️ CAMBIA este ID por el del .keras NUEVO de VGG16
+VGG16_ID = "1D6JYi8GwZ6H2noD4KW5FB8GwIVrgDnb-"   # <-- reemplaza esto
 
 # ResNet50 → .keras (el que ya funcionaba)
 RESNET50_ID = "1xbrx9aIcgLKVb8d8MQG6ZsU2yPwBywbn"
@@ -47,60 +46,28 @@ def descargar_modelo(file_id, nombre_local):
     return ruta_local
 
 
-def descargar_y_descomprimir_vgg16_zip():
-    """
-    Descarga vgg16_savedmodel.zip desde Drive y lo descomprime en:
-      models/vgg16_savedmodel/
-    Devuelve la ruta al directorio SavedModel.
-    """
-    os.makedirs(MODELS_DIR, exist_ok=True)
-
-    zip_path = os.path.join(MODELS_DIR, "vgg16_savedmodel.zip")
-    model_dir = os.path.join(MODELS_DIR, "vgg16_savedmodel")
-
-    # Si ya está descomprimido y tiene saved_model.pb, lo usamos directamente
-    if os.path.exists(os.path.join(model_dir, "saved_model.pb")):
-        return model_dir
-
-    # Si no está el zip, lo descargamos
-    if not os.path.exists(zip_path):
-        url = f"https://drive.google.com/uc?id={VGG16_ZIP_ID}"
-        with st.spinner("Descargando VGG16 (SavedModel.zip)..."):
-            gdown.download(url, zip_path, quiet=False)
-
-    # Descomprimir el zip dentro de model_dir
-    with zipfile.ZipFile(zip_path, "r") as zip_ref:
-        zip_ref.extractall(model_dir)
-
-    return model_dir
-
-
 @st.cache_resource
 def load_selected_model(model_name: str):
     """
     Carga el modelo seleccionado, garantizando que ResNet50 siempre funcione.
-    - Siempre cargamos ResNet50 como modelo base estable.
-    - Si el usuario elige VGG16, intentamos cargarlo desde SavedModel (.pb);
-      si falla, mostramos un aviso y usamos ResNet50 para no romper la app.
+    - Siempre cargamos ResNet50 como modelo base estable (tf.keras).
+    - Si el usuario elige VGG16, lo cargamos con Keras 3.
+      Si falla, usamos ResNet50 y mostramos un aviso.
     """
-    # 1️⃣ Cargar SIEMPRE ResNet50 (modelo estable)
+    # 1️⃣ Cargar SIEMPRE ResNet50 (modelo estable con tf.keras)
     resnet_path = descargar_modelo(RESNET50_ID, "resnet50_model.keras")
     resnet_model = tf.keras.models.load_model(resnet_path, compile=False)
 
-    # 2️⃣ Si el usuario elige VGG16, intentamos cargarlo desde SavedModel
+    # 2️⃣ Si el usuario elige VGG16, intentamos cargarlo con Keras 3
     if model_name == "VGG16":
+        vgg_path = descargar_modelo(VGG16_ID, "vgg16_model.keras")
         try:
-            vgg_dir = descargar_y_descomprimir_vgg16_zip()
-            # Para SavedModel se pasa la carpeta, no un archivo
-            vgg_model = tf.keras.models.load_model(
-                vgg_dir,
-                compile=False
-            )
+            # 👇 usamos keras.models.load_model (Keras 3), NO tf.keras
+            vgg_model = keras.models.load_model(vgg_path)
             return vgg_model
         except Exception as e:
-            # Si falla, NO rompemos la app: usamos ResNet y avisamos
             st.error(
-                "⚠️ No se pudo cargar el modelo VGG16 en la versión web "
+                "⚠️ No se pudo cargar el modelo **VGG16** en la versión web "
                 "por un problema de compatibilidad de TensorFlow/Keras.\n\n"
                 "➡️ Se usará **ResNet50** en su lugar para hacer la predicción."
             )
@@ -292,5 +259,3 @@ else:
         "👈 Sube una imagen en la parte izquierda para ver aquí la mejor predicción, "
         "el nombre real del ave y una breve descripción, junto con barras de probabilidad."
     )
-
-
