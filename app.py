@@ -3,12 +3,10 @@ import os
 import streamlit as st
 from PIL import Image
 import pandas as pd
-
 import tensorflow as tf
 import gdown
 
 from utils import predict
-
 
 # ==========================
 # 🔧 CONFIGURACIÓN BÁSICA
@@ -18,12 +16,16 @@ st.set_page_config(
     page_icon="🦜",
     layout="wide",
 )
-# 📂 Carpeta donde se guardarán los modelos descargados
+
+# ==========================
+# 📁 MANEJO DE MODELOS (.keras desde Drive)
+# ==========================
 MODELS_DIR = "models"
 
-# ✅ IDs reales de tus modelos en Google Drive (.keras)
+# ✅ IDs de tus modelos en Google Drive
 VGG16_ID = "1Jppl1AHwIZvZ74t3RF4tjFXOzA_EOOlU"
 RESNET50_ID = "1xbrx9aIcgLKVb8d8MQG6ZsU2yPwBywbn"
+
 
 def descargar_modelo_keras(file_id, nombre_local):
     """
@@ -38,11 +40,11 @@ def descargar_modelo_keras(file_id, nombre_local):
             gdown.download(url, ruta_local, quiet=False)
     return ruta_local
 
+
 @st.cache_resource
 def load_selected_model(model_name: str):
     """
-    Carga el modelo .keras seleccionado (VGG16 o ResNet50).
-    Si no existe localmente, lo descarga desde Google Drive.
+    Carga el modelo seleccionado (VGG16 o ResNet50) desde .keras.
     """
     if model_name == "VGG16":
         modelo_path = descargar_modelo_keras(VGG16_ID, "vgg16_model.keras")
@@ -51,6 +53,7 @@ def load_selected_model(model_name: str):
 
     modelo = tf.keras.models.load_model(modelo_path, compile=False)
     return modelo
+
 
 # ==========================
 # 🐦 INFO DE LAS ESPECIES
@@ -156,7 +159,7 @@ if uploaded_file:
     col_left.image(img, caption="Imagen cargada", use_column_width=True)
 
     if col_left.button("🔍 Clasificar ave"):
-        with st.spinner("Analizando la imagen con el modelo seleccionado..."):
+        with st.spinner(f"Analizando la imagen con el modelo {model_name}..."):
             results = predict(model, img, model_type=model_name)
 
         if not results:
@@ -191,7 +194,6 @@ if uploaded_file:
             # ==========================
             st.markdown("### 📊 Top predicciones del modelo")
 
-            # DataFrame para la gráfica
             labels = []
             probs = []
             for name, prob in results:
@@ -209,10 +211,8 @@ if uploaded_file:
                 {"Especie": labels, "Probabilidad (%)": probs}
             ).set_index("Especie")
 
-            # Gráfica de barras
             st.bar_chart(df)
 
-            # Detalle texto + descripciones
             st.markdown("#### 📋 Detalle de predicciones")
             for (name, prob) in results:
                 info = BIRD_INFO.get(
@@ -236,6 +236,4 @@ else:
         "👈 Sube una imagen en la parte izquierda para ver aquí la mejor predicción, "
         "el nombre real del ave y una breve descripción, junto con barras de probabilidad."
     )
-
-
 
