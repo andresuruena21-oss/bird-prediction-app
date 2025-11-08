@@ -5,7 +5,6 @@ from PIL import Image
 import pandas as pd
 
 import tensorflow as tf
-import keras          # 👈 usamos Keras 3 para cargar VGG16
 import gdown
 
 from utils import predict
@@ -25,8 +24,8 @@ st.set_page_config(
 MODELS_DIR = "models"
 
 # ✅ IDs reales de tus modelos en Google Drive
-# ⚠️ CAMBIA este ID por el del .keras NUEVO de VGG16
-VGG16_ID = "1D6JYi8GwZ6H2noD4KW5FB8GwIVrgDnb-"   # <-- reemplaza esto
+# VGG16 → vgg16_birds_final.keras (guardado con tf.keras)
+VGG16_ID = "14h5wstqxEEaRKZNCgCDwOJNG8q_zxTEa"
 
 # ResNet50 → .keras (el que ya funcionaba)
 RESNET50_ID = "1xbrx9aIcgLKVb8d8MQG6ZsU2yPwBywbn"
@@ -45,36 +44,29 @@ def descargar_modelo(file_id, nombre_local):
             gdown.download(url, ruta_local, quiet=False)
     return ruta_local
 
+
 @st.cache_resource
 def load_selected_model(model_name: str):
     """
     Carga el modelo seleccionado, garantizando que ResNet50 siempre funcione.
     - Siempre cargamos ResNet50 como modelo base estable (tf.keras).
-    - Si el usuario elige VGG16, lo cargamos con Keras 3.
+    - Si el usuario elige VGG16, lo cargamos también con tf.keras.
       Si falla, usamos ResNet50 y mostramos un aviso.
     """
-    st.write(f"🔄 Cargando modelo: {model_name}")
-
-    # 1️⃣ Intentar cargar ResNet50 (modelo estable)
+    # 1️⃣ Cargar SIEMPRE ResNet50 (modelo estable)
     try:
-        st.write("➡️ Descargando/cargando ResNet50...")
         resnet_path = descargar_modelo(RESNET50_ID, "resnet50_model.keras")
         resnet_model = tf.keras.models.load_model(resnet_path, compile=False)
-        st.write("✅ ResNet50 cargado correctamente.")
     except Exception as e:
         st.error("❌ No se pudo cargar **ResNet50** (modelo base).")
         st.exception(e)
-        # Si ni siquiera ResNet carga, no tiene sentido seguir
         st.stop()
 
-    # 2️⃣ Si el usuario elige VGG16, intentamos cargarlo con Keras 3
+    # 2️⃣ Si el usuario elige VGG16, intentamos cargarlo
     if model_name == "VGG16":
-        st.write("➡️ Descargando/cargando VGG16 (.keras con Keras 3)...")
-        vgg_path = descargar_modelo(VGG16_ID, "vgg16_model.keras")
+        vgg_path = descargar_modelo(VGG16_ID, "vgg16_birds_final.keras")
         try:
-            import keras
-            vgg_model = keras.models.load_model(vgg_path)
-            st.write("✅ VGG16 cargado correctamente.")
+            vgg_model = tf.keras.models.load_model(vgg_path, compile=False)
             return vgg_model
         except Exception as e:
             st.error(
@@ -82,13 +74,13 @@ def load_selected_model(model_name: str):
                 "compatibilidad de TensorFlow/Keras.\n\n"
                 "➡️ Se usará **ResNet50** en su lugar para hacer la predicción."
             )
-            # Mostrar detalle técnico abajo para depurar
             st.caption(f"Tipo de error: {type(e).__name__}")
             st.exception(e)
             return resnet_model
 
     # 3️⃣ Si el usuario elige ResNet50, devolvemos el modelo estable
     return resnet_model
+
 
 # ==========================
 # 🐦 INFO DE LAS ESPECIES
